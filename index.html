@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#fff8f1" />
+    <meta
+      name="description"
+      content="SnapSpot is your playful, in-browser photo booth. Pick a filter, strike a pose, and save the moment."
+    />
+    <title>SnapSpot — Your little photo booth</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="SnapSpot home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <rect x="3" y="8" width="26" height="19" rx="6" fill="currentColor" />
+              <path d="M10 8l2-3h8l2 3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+              <circle cx="16" cy="17.5" r="5" fill="#FFF8F1" />
+              <circle cx="16" cy="17.5" r="2.5" fill="currentColor" />
+              <circle cx="24" cy="12.5" r="1" fill="#FFF8F1" />
+            </svg>
+          </span>
+          <span>snap<span class="brand-accent">spot</span></span>
+        </a>
+        <span class="topbar-note"><span class="sparkle" aria-hidden="true">✦</span> A little joy, one photo at a time</span>
+      </header>
+
+      <main>
+        <section class="intro" aria-labelledby="page-title">
+          <div class="intro-copy">
+            <p class="eyebrow"><span aria-hidden="true">✿</span> YOUR VERY OWN PHOTO BOOTH</p>
+            <h1 id="page-title">Strike a pose.<br /><span>Make it a moment.</span></h1>
+            <p class="intro-text">Pick your vibe, get your smile ready, and let’s make something worth keeping.</p>
+          </div>
+          <div class="doodle" aria-hidden="true">
+            <span class="doodle-star">✳</span>
+            <span class="doodle-heart">♥</span>
+            <span class="doodle-spark">✦</span>
+          </div>
+        </section>
+
+        <section class="booth-layout" aria-label="Photo booth">
+          <div class="booth-column">
+            <div class="camera-card">
+              <div class="camera-topline">
+                <div class="camera-label">
+                  <span class="live-dot" id="live-dot"></span>
+                  <span id="camera-label">CAMERA IS OFF</span>
+                </div>
+                <button class="icon-button" id="switch-camera" type="button" aria-label="Switch camera" title="Switch camera" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 7v5h-5M4 17v-5h5" />
+                    <path d="M5.7 9a7 7 0 0 1 11.6-2L20 9M4 15l2.7 2a7 7 0 0 0 11.6-2" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="video-frame" id="video-frame" data-facing="user">
+                <video id="video" autoplay playsinline muted aria-label="Live camera preview"></video>
+                <div class="video-placeholder" id="video-placeholder">
+                  <div class="placeholder-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" fill="none">
+                      <rect x="8" y="17" width="48" height="36" rx="11" stroke="currentColor" stroke-width="3" />
+                      <path d="M21 17l4-7h14l4 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                      <circle cx="32" cy="34" r="10" stroke="currentColor" stroke-width="3" />
+                      <circle cx="32" cy="34" r="4" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <h2 id="placeholder-title">Your spotlight is waiting</h2>
+                  <p id="placeholder-copy">Allow camera access to see your live preview and get started.</p>
+                  <button class="button button-primary start-button" id="start-camera" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5" /><path d="M3 12h12m0 0-4-4m4 4-4 4" /></svg>
+                    <span>Turn on my camera</span>
+                  </button>
+                </div>
+                <div class="countdown-overlay" id="countdown-overlay" aria-live="assertive" aria-atomic="true" hidden></div>
+                <div class="flash-overlay" id="flash-overlay" aria-hidden="true"></div>
+                <span class="frame-sticker sticker-one" aria-hidden="true">✦</span>
+                <span class="frame-sticker sticker-two" aria-hidden="true">♡</span>
+              </div>
+              <div class="camera-footer">
+                <span id="camera-hint">Camera access stays on your device.</span>
+                <span class="privacy-lock"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" /></svg> PRIVATE &amp; LOCAL</span>
+              </div>
+            </div>
+
+            <div class="controls-card">
+              <div class="control-row filter-row">
+                <div class="control-title">
+                  <span class="control-icon filter-icon" aria-hidden="true">✧</span>
+                  <div><h2>Choose your vibe</h2><p>Filters apply to your preview &amp; photos</p></div>
+                </div>
+                <div class="filter-options" role="group" aria-label="Photo filter">
+                  <button class="filter-button active" type="button" data-filter="original" aria-pressed="true">
+                    <span class="filter-swatch swatch-original" aria-hidden="true"></span>Original
+                  </button>
+                  <button class="filter-button" type="button" data-filter="vintage" aria-pressed="false">
+                    <span class="filter-swatch swatch-vintage" aria-hidden="true"></span>Vintage
+                  </button>
+                  <button class="filter-button" type="button" data-filter="grayscale" aria-pressed="false">
+                    <span class="filter-swatch swatch-grayscale" aria-hidden="true"></span>Grayscale
+                  </button>
+                  <button class="filter-button" type="button" data-filter="warm" aria-pressed="false">
+                    <span class="filter-swatch swatch-warm" aria-hidden="true"></span>Warm
+                  </button>
+                  <button class="filter-button" type="button" data-filter="cool" aria-pressed="false">
+                    <span class="filter-swatch swatch-cool" aria-hidden="true"></span>Cool
+                  </button>
+                </div>
+              </div>
+
+              <div class="control-divider"></div>
+
+              <div class="pose-suggestion" aria-live="polite">
+                <div class="pose-copy">
+                  <span class="pose-icon" aria-hidden="true">✦</span>
+                  <div>
+                    <h2>Need a pose?</h2>
+                    <p id="pose-idea">Tap for a little inspiration.</p>
+                  </div>
+                </div>
+                <button class="button button-surprise" id="surprise-button" type="button">
+                  <span aria-hidden="true">✧</span> Surprise me
+                </button>
+              </div>
+
+              <div class="control-divider"></div>
+
+              <div class="control-row capture-row">
+                <div class="control-title">
+                  <span class="control-icon timer-icon" aria-hidden="true">◷</span>
+                  <div><h2>Ready, set…</h2><p>Choose your countdown</p></div>
+                </div>
+                <div class="capture-actions">
+                  <div class="timer-options" role="group" aria-label="Countdown duration">
+                    <button class="timer-button" type="button" data-seconds="3" aria-pressed="false">3s</button>
+                    <button class="timer-button active" type="button" data-seconds="5" aria-pressed="true">5s</button>
+                    <button class="timer-button" type="button" data-seconds="10" aria-pressed="false">10s</button>
+                  </div>
+                  <button class="button button-capture" id="capture-button" type="button" disabled>
+                    <span class="shutter-icon" aria-hidden="true"><span></span></span>
+                    <span id="capture-label">Take a photo</span>
+                  </button>
+                </div>
+              </div>
+              <p class="camera-error" id="camera-error" role="alert" hidden></p>
+            </div>
+          </div>
+
+          <aside class="gallery-card" aria-labelledby="gallery-title">
+            <div class="gallery-heading">
+              <div>
+                <p class="eyebrow gallery-eyebrow"><span aria-hidden="true">♡</span> THE GOOD STUFF</p>
+                <h2 id="gallery-title">Your moments <span class="photo-count" id="photo-count">0</span></h2>
+              </div>
+              <span class="gallery-sparkle" aria-hidden="true">✳</span>
+            </div>
+            <p class="gallery-subtitle">Your latest snaps, ready to keep.</p>
+            <p class="storage-status" id="storage-status" role="status" aria-live="polite">Loading saved photos…</p>
+            <div class="gallery-grid" id="gallery-grid" aria-live="polite">
+              <div class="gallery-empty" id="gallery-empty">
+                <span class="empty-camera" aria-hidden="true">♡</span>
+                <p>Your photos will show up here.</p>
+                <span>Go on, make the first one!</span>
+              </div>
+            </div>
+            <p class="gallery-footnote"><span aria-hidden="true">✦</span> Photos stay on this device. Clearing browser site data can erase them.</p>
+          </aside>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>Made for your best angles <span aria-hidden="true">♡</span></span>
+        <span>No uploads. Just you, looking great.</span>
+      </footer>
+    </div>
+
+    <canvas id="photo-canvas" hidden></canvas>
+  </body>
+</html>
