@@ -87,17 +87,25 @@ function cameraErrorMessage(error) {
 }
 
 function updateCameraControls(isReady) {
-  const canSwitch = cameraDevices.length > 1;
+  const canSwitch = cameraDevices.length > 1 || Boolean(navigator.mediaDevices?.getSupportedConstraints?.()?.facingMode);
   switchButton.hidden = !isReady || !canSwitch;
   switchButton.disabled = isStartingCamera || isCapturing;
+  const targetFacing = cameraFacing === "user" ? "environment" : "user";
+  const targetCameraName = targetFacing === "user" ? "front" : "rear";
+  switchButton.setAttribute("aria-label", `Switch to ${targetCameraName} camera`);
+  switchButton.title = `Switch to ${targetCameraName} camera`;
   captureButton.disabled = !isReady || isCapturing || isStartingCamera || !photoStorageReady;
   startButton.querySelector("span").textContent = isReady ? "Camera is on" : "Try camera again";
   startButton.disabled = isReady || isStartingCamera;
   if (isReady) {
-    cameraLabel.textContent = isStartingCamera ? "SWITCHING CAMERA" : "CAMERA IS ON";
+    cameraLabel.textContent = isStartingCamera
+      ? "SWITCHING CAMERA"
+      : cameraFacing === "environment" ? "REAR CAMERA IS ON" : "FRONT CAMERA IS ON";
     liveDot.classList.add("is-live");
     placeholder.hidden = true;
-    cameraHint.textContent = canSwitch ? "Tap the arrows to switch cameras." : "Camera access stays on your device.";
+    cameraHint.textContent = canSwitch
+      ? `Tap the arrows to switch to the ${targetCameraName} camera.`
+      : "Camera access stays on your device.";
   } else {
     cameraLabel.textContent = "CAMERA IS OFF";
     liveDot.classList.remove("is-live");
@@ -113,6 +121,13 @@ async function refreshCameraDevices() {
   }
   const devices = await navigator.mediaDevices.enumerateDevices();
   cameraDevices = devices.filter((device) => device.kind === "videoinput");
+}
+
+function findCameraForFacing(facingMode) {
+  const pattern = facingMode === "environment"
+    ? /back|rear|environment|world/
+    : /front|user|facetime|built.?in/;
+  return cameraDevices.find((device) => pattern.test(device.label.toLowerCase()));
 }
 
 async function startCamera(options = {}) {
@@ -138,10 +153,22 @@ async function startCamera(options = {}) {
 
   let newStream;
   try {
-    const videoConstraints = options.deviceId
-      ? { deviceId: { exact: options.deviceId } }
-      : { facingMode: { ideal: options.facingMode || cameraFacing } };
-    newStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
+    const facingMode = options.facingMode || "user";
+    try {
+      newStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { exact: facingMode } }
+      });
+    } catch (facingError) {
+      if (!options.allowDeviceFallback) throw facingError;
+      await refreshCameraDevices();
+      const targetDevice = findCameraForFacing(facingMode);
+      if (!targetDevice) throw facingError;
+      newStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { deviceId: { exact: targetDevice.deviceId } }
+      });
+    }
   } catch (error) {
     isStartingCamera = false;
     placeholderTitle.textContent = "Your spotlight is waiting";
@@ -166,7 +193,9 @@ async function startCamera(options = {}) {
   video.srcObject = stream;
   const trackSettings = stream.getVideoTracks()[0]?.getSettings() || {};
   activeDeviceId = trackSettings.deviceId || options.deviceId || null;
-  cameraFacing = trackSettings.facingMode || options.facingMode || cameraFacing;
+  cameraFacing = trackSettings.facingMode === "user" || trackSettings.facingMode === "environment"
+    ? trackSettings.facingMode
+    : options.facingMode || "user";
   videoFrame.dataset.facing = cameraFacing;
   video.style.filter = FILTERS[activeFilter];
   stream.getVideoTracks().forEach((track) => {
@@ -551,24 +580,34 @@ function beginCapture() {
 }
 
 async function switchCamera() {
-  if (isCapturing) return;
+  if (isCapturing || isStartingCamera || !stream) return;
+  const previousFacing = cameraFacing;
+  const targetFacing = previousFacing === "user" ? "environment" : "user";
+  const targetName = targetFacing === "environment" ? "rear" : "front";
   try {
     await refreshCameraDevices();
   } catch (error) {
-    setCameraError("We couldn’t check your available cameras. Please try again.");
+    cameraDevices = [];
+  }
+
+  const previousStream = stream;
+  stream = null;
+  video.srcObject = null;
+  previousStream.getTracks().forEach((track) => track.stop());
+
+  const switched = await startCamera({ facingMode: targetFacing, allowDeviceFallback: true });
+  if (switched) {
+    setCameraError("");
     return;
   }
-  if (cameraDevices.length < 2) {
-    switchButton.hidden = true;
-    cameraHint.textContent = "Only one camera is available on this device.";
-    return;
+
+  const switchError = cameraError.textContent;
+  const restored = await startCamera({ facingMode: previousFacing, allowDeviceFallback: true });
+  if (restored) {
+    setCameraError(`The ${targetName} camera isn’t available. Your previous camera is still on.`);
+  } else {
+    setCameraError(`${switchError} The previous camera could not be restarted.`);
   }
-  const currentIndex = cameraDevices.findIndex((device) => device.deviceId === activeDeviceId);
-  const nextDevice = cameraDevices[(currentIndex + 1 + cameraDevices.length) % cameraDevices.length];
-  const label = nextDevice.label.toLowerCase();
-  const facingMode = /back|rear|environment/.test(label) ? "environment" : /front|user|facetime/.test(label) ? "user" : cameraFacing;
-  const switched = await startCamera({ deviceId: nextDevice.deviceId, facingMode });
-  if (switched) setCameraError("");
 }
 
 startButton.addEventListener("click", () => {
