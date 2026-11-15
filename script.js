@@ -157,17 +157,24 @@ async function startCamera(options = {}) {
     try {
       newStream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: { facingMode: { exact: facingMode } }
+        video: options.allowDeviceFallback
+          ? { facingMode: { exact: facingMode } }
+          : { facingMode: { ideal: facingMode } }
       });
     } catch (facingError) {
-      if (!options.allowDeviceFallback) throw facingError;
-      await refreshCameraDevices();
-      const targetDevice = findCameraForFacing(facingMode);
-      if (!targetDevice) throw facingError;
-      newStream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { deviceId: { exact: targetDevice.deviceId } }
-      });
+      if (options.allowDeviceFallback) {
+        await refreshCameraDevices();
+        const targetDevice = findCameraForFacing(facingMode);
+        if (!targetDevice) throw facingError;
+        newStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { deviceId: { exact: targetDevice.deviceId } }
+        });
+      } else if (facingError.name === "OverconstrainedError" || facingError.name === "TypeError") {
+        newStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+      } else {
+        throw facingError;
+      }
     }
   } catch (error) {
     isStartingCamera = false;
